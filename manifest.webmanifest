@@ -1,0 +1,18 @@
+{
+  "name": "Devise Madina",
+  "short_name": "Devise Madina",
+  "description": "Échanger dollars, euros, francs CFA et francs guinéens au marché de Madina, Conakry.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a2f86",
+  "theme_color": "#0b4fd8",
+  "icons": [
+    { "src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icones/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

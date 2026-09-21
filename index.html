@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+  Politique de sécurité (CSP) : seuls les fichiers de ce site peuvent
+  s'exécuter, et l'app ne parle qu'à Supabase. Aucun script dans la page.
+-->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self'">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="Devise Madina : trouver quelqu'un pour échanger dollars, euros, francs CFA et francs guinéens au marché de Madina, Conakry.">
+<meta name="theme-color" content="#0758b8">
+<title>Devise Madina</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icones/icone-192.png">
+<link rel="apple-touch-icon" href="icones/icone-192.png">
+<!-- Scripts classiques (pas de « module ») : la page marche aussi ouverte par double-clic -->
+<script src="js/config.js" defer></script>
+<script src="js/vendor/supabase.js" defer></script>
+<script src="js/outils.js" defer></script>
+<script src="js/api.js" defer></script>
+<script src="js/assistant.js" defer></script>
+<script src="js/app.js" defer></script>
+</head>
+
+<body>
+
+<noscript>
+  <p class="noscript">Devise Madina a besoin de JavaScript pour fonctionner.</p>
+</noscript>
+
+<!-- Messages (lus par TalkBack) -->
+<div id="message" class="message hidden" role="status" aria-live="polite"></div>
+
+<!-- Fenêtre (prudence, signalement, confirmation) remplie par js/app.js -->
+<dialog id="fenetre" class="fenetre" aria-labelledby="fenetreTitre">
+  <h2 id="fenetreTitre"></h2>
+  <div id="fenetreContenu"></div>
+  <div id="fenetreBoutons" class="fenetre-boutons"></div>
+</dialog>
+
+<!-- ================= CHARGEMENT ================= -->
+<div id="ecranChargement" class="ecran-chargement">
+  <div class="logo-rond" aria-hidden="true">DM</div>
+  <h1>Devise Madina</h1>
+  <p>Votre plateforme d'échange à Madina</p>
+  <!-- Apparaît tout seul après 6 secondes si l'app n'a pas démarré (sans JavaScript) -->
+  <p class="aide-blocage">Ça ne démarre pas ? Vérifie ta connexion internet,
+    puis recharge la page.</p>
+</div>
+
+<!-- ================= SITE PAS ENCORE RELIÉ ================= -->
+<main id="ecranConfig" class="auth hidden">
+  <div class="auth-boite">
+    <div class="logo-rond petit" aria-hidden="true">DM</div>
+    <h2>Pas encore relié au serveur</h2>
+    <p class="aide">Le site est prêt, mais il n'est pas encore connecté à sa base de données.
+      Il faut d'abord créer le projet Supabase (gratuit), puis remplir
+      <b>js/config.js</b>.</p>
+    <p class="aide">Suis le fichier <b>DEPLOIEMENT.md</b>, étapes 1 à 5.</p>
+  </div>
+</main>
+
+<!-- ================= CONNEXION / INSCRIPTION ================= -->
+<main id="auth" class="auth hidden">
+  <!-- Bandeau d'accueil -->
+  <div class="auth-hero">
+    <div class="logo-rond" aria-hidden="true">DM</div>
+    <p class="hero-titre">Devise Madina</p>
+    <p class="hero-texte">Échangez vos devises en confiance, au marché de Madina.</p>
+    <div class="hero-devises" aria-hidden="true">
+      <span>💵</span><span>💶</span><span>🌍</span><span>🇬🇳</span>
+    </div>
+  </div>
+
+  <div class="auth-boite">
+
+    <!-- Choix -->
+    <section id="etapeChoix" class="etape" aria-labelledby="titreChoix">
+      <h2 id="titreChoix">Bienvenue <span aria-hidden="true">👋</span></h2>
+      <button type="button" class="gros-bouton vert" data-aller="etapePin">
+        <span aria-hidden="true">🔑</span> J'ai déjà un compte
+      </button>
+      <button type="button" class="gros-bouton bleu" data-aller="etapeInscription">
+        <span aria-hidden="true">🆕</span> Créer un compte
+      </button>
+      <button type="button" class="gros-bouton gris" data-aller="etapeReprise">
+        <span aria-hidden="true">❓</span> J'ai oublié mon code PIN
+      </button>
+    </section>
+
+    <!-- Connexion : numéro + PIN -->
+    <form id="etapePin" class="etape hidden" novalidate>
+      <h2>Connexion</h2>
+      <label for="pinTel">Numéro de téléphone</label>
+      <div class="tel-groupe">
+        <span class="prefixe" aria-hidden="true">🇬🇳 +224</span>
+        <input id="pinTel" class="tel" type="tel" inputmode="numeric" autocomplete="tel-national"
+               maxlength="9" placeholder="6XXXXXXXX" required>
+      </div>
+      <label for="pinCode">Code PIN (4 chiffres)</label>
+      <input id="pinCode" class="pin" type="password" inputmode="numeric"
+             autocomplete="current-password" maxlength="4" required>
+      <button type="submit" class="gros-bouton vert">
+        <span aria-hidden="true">✅</span> Entrer
+      </button>
+      <button type="button" class="lien" data-aller="etapeChoix">← Retour</button>
+    </form>
+
+    <!-- Inscription : numéro + nom + PIN + consentement -->
+    <form id="etapeInscription" class="etape hidden" novalidate>
+      <h2>Créer un compte</h2>
+      <label for="insTel">Numéro de téléphone (WhatsApp)</label>
+      <div class="tel-groupe">
+        <span class="prefixe" aria-hidden="true">🇬🇳 +224</span>
+        <input id="insTel" class="tel" type="tel" inputmode="numeric" autocomplete="tel-national"
+               maxlength="9" placeholder="6XXXXXXXX" required>
+      </div>
+      <label for="insNom">Ton nom</label>
+      <input id="insNom" type="text" autocomplete="name" maxlength="40" required>
+      <label for="insPin">Choisis un code PIN (4 chiffres)</label>
+      <input id="insPin" class="pin" type="password" inputmode="numeric"
+             autocomplete="new-password" maxlength="4" required>
+      <label for="insPin2">Répète le code PIN</label>
+      <input id="insPin2" class="pin" type="password" inputmode="numeric"
+             autocomplete="new-password" maxlength="4" required>
+      <p class="aide">Ne donne jamais ce code à personne, comme pour Orange Money.</p>
+      <label class="case">
+        <input id="insConsentement" type="checkbox" required>
+        <span>J'accepte que Devise Madina garde mon numéro et le montre
+          aux personnes qui cliquent sur « Contacter » sous mes annonces.
+          Devise Madina met en relation et ne détient jamais mon argent.</span>
+      </label>
+      <button type="submit" class="gros-bouton vert">
+        <span aria-hidden="true">✅</span> Créer mon compte
+      </button>
+      <button type="button" class="lien" data-aller="etapeChoix">← Retour</button>
+    </form>
+
+    <!-- PIN oublié : code donné par l'admin sur WhatsApp -->
+    <form id="etapeReprise" class="etape hidden" novalidate>
+      <h2>Code PIN oublié</h2>
+      <p class="aide"><b>1.</b> Écris à l'administrateur sur WhatsApp,
+        <b>depuis le numéro de ton compte</b>.</p>
+      <a id="lienSupport" class="gros-bouton whatsapp" href="#" target="_blank" rel="noopener noreferrer">
+        <span aria-hidden="true">💬</span> Écrire à l'administrateur
+      </a>
+      <p class="aide"><b>2.</b> Il te répond avec un code à 6 chiffres (valable 30 minutes).</p>
+      <label for="repTel">Numéro de téléphone</label>
+      <div class="tel-groupe">
+        <span class="prefixe" aria-hidden="true">🇬🇳 +224</span>
+        <input id="repTel" class="tel" type="tel" inputmode="numeric" autocomplete="tel-national"
+               maxlength="9" placeholder="6XXXXXXXX" required>
+      </div>
+      <label for="repCode">Code reçu (6 chiffres)</label>
+      <input id="repCode" class="pin" type="text" inputmode="numeric"
+             autocomplete="one-time-code" maxlength="6" required>
+      <label for="repPin">Nouveau code PIN (4 chiffres)</label>
+      <input id="repPin" class="pin" type="password" inputmode="numeric"
+             autocomplete="new-password" maxlength="4" required>
+      <label for="repPin2">Répète le nouveau code PIN</label>
+      <input id="repPin2" class="pin" type="password" inputmode="numeric"
+             autocomplete="new-password" maxlength="4" required>
+      <button type="submit" class="gros-bouton vert">
+        <span aria-hidden="true">✅</span> Valider
+      </button>
+      <button type="button" class="lien" data-aller="etapeChoix">← Retour</button>
+    </form>
+
+  </div>
+</main>
+
+<!-- ================= APPLICATION ================= -->
+<div id="app" class="hidden">
+
+<header class="entete">
+  <div class="entete-contenu">
+    <div class="logo">
+      <span class="logo-mini" aria-hidden="true">DM</span>
+      <span>
+        <span class="logo-nom">Devise Madina</span>
+        <span class="logo-bonjour" id="bonjour"></span>
+      </span>
+    </div>
+    <span id="etatReseau" class="etat-reseau" role="status" aria-live="polite"></span>
+    <button type="button" class="deconnexion" id="btnDeconnexion">
+      <span aria-hidden="true">🚪</span> Sortir
+    </button>
+  </div>
+</header>
+
+<main class="contenu">
+
+  <!-- ---------- ACCUEIL / PUBLIER ---------- -->
+  <section id="pageAccueil" class="page active" aria-labelledby="titreAccueil">
+    <div id="banniereHorsLigne" class="banniere-hors-ligne hidden" role="status"></div>
+    <p class="etiquette-section">Taux du jour</p>
+    <div class="taux-grille" id="tauxAccueil" aria-label="Taux du jour"></div>
+
+    <h2 id="titreAccueil" class="titre">Publier une annonce</h2>
+    <p class="sous-titre">Trouvez quelqu'un qui possède la devise que vous recherchez.</p>
+
+    <!-- Assistant en images : une question par écran (js/assistant.js) -->
+    <div id="assistant" class="carte assistant" aria-live="polite"></div>
+
+    <!-- Formulaire complet, replié : pour les personnes qui lisent bien -->
+    <details class="formulaire-rapide">
+      <summary><span aria-hidden="true">✍️</span> Formulaire rapide (tout sur une page)</summary>
+    <form id="formAnnonce" class="carte" novalidate>
+
+      <fieldset>
+        <legend class="section-titre vert-clair"><span aria-hidden="true">💰</span> CE QUE J'AI</legend>
+        <div class="grille-form">
+          <div class="champ">
+            <label for="aDevise">J'ai</label>
+            <select id="aDevise" data-liste="devises"></select>
+          </div>
+          <div class="champ">
+            <label for="aMontant">Montant</label>
+            <input id="aMontant" type="text" inputmode="decimal" placeholder="Ex : 1000" required>
+          </div>
+          <div class="champ plein">
+            <label for="aForme">Sous forme de</label>
+            <select id="aForme" data-liste="formes" data-cheque="chequeA"></select>
+          </div>
+          <div id="chequeA" class="boite-cheque plein hidden">
+            <div class="champ">
+              <label for="aChequeType">Type de chèque</label>
+              <select id="aChequeType" data-liste="cheques"></select>
+            </div>
+            <div class="champ">
+              <label for="aBanque">Banque</label>
+              <input id="aBanque" type="text" maxlength="40" placeholder="Nom de la banque">
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="section-titre bleu-clair"><span aria-hidden="true">🔎</span> CE QUE JE CHERCHE</legend>
+        <div class="grille-form">
+          <div class="champ">
+            <label for="cDevise">Je cherche</label>
+            <select id="cDevise" data-liste="devises"></select>
+          </div>
+          <div class="champ">
+            <label for="cForme">Sous forme de</label>
+            <select id="cForme" data-liste="formes" data-cheque="chequeC"></select>
+          </div>
+          <div id="chequeC" class="boite-cheque plein hidden">
+            <div class="champ">
+              <label for="cChequeType">Type de chèque</label>
+              <select id="cChequeType" data-liste="cheques"></select>
+            </div>
+            <div class="champ">
+              <label for="cBanque">Banque</label>
+              <input id="cBanque" type="text" maxlength="40" placeholder="Nom de la banque">
+            </div>
+          </div>
+          <div class="champ">
+            <label for="taux">Taux proposé</label>
+            <input id="taux" type="text" inputmode="decimal" placeholder="Ex : 8600">
+          </div>
+          <div class="champ">
+            <label for="duree">Durée de validité</label>
+            <select id="duree" data-liste="durees"></select>
+          </div>
+          <div class="champ plein">
+            <label class="case">
+              <input id="negociable" type="checkbox">
+              <span><span aria-hidden="true">🤝</span> À négocier</span>
+            </label>
+          </div>
+          <div class="champ plein">
+            <label for="lieu"><span aria-hidden="true">📍</span> Localisation</label>
+            <input id="lieu" type="text" maxlength="60" placeholder="Ex : Madina, marché" required>
+          </div>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="gros-bouton vert">
+        <span aria-hidden="true">📢</span> Publier l'annonce
+      </button>
+    </form>
+    </details>
+  </section>
+
+  <!-- ---------- ANNONCES ---------- -->
+  <section id="pageAnnonces" class="page" aria-labelledby="titreAnnonces">
+    <h2 id="titreAnnonces" class="titre"><span aria-hidden="true">📢</span> Annonces</h2>
+    <p class="sous-titre">Je cherche :</p>
+    <div class="filtres" id="filtres" role="group" aria-label="Je cherche"></div>
+    <div id="listeAnnonces"></div>
+  </section>
+
+  <!-- ---------- MES ANNONCES ---------- -->
+  <section id="pageMesAnnonces" class="page" aria-labelledby="titreMes">
+    <h2 id="titreMes" class="titre"><span aria-hidden="true">📋</span> Mes annonces</h2>
+    <div id="mesAnnonces"></div>
+  </section>
+
+  <!-- ---------- TAUX ---------- -->
+  <section id="pageTaux" class="page" aria-labelledby="titreTaux">
+    <h2 id="titreTaux" class="titre"><span aria-hidden="true">📊</span> Taux du jour</h2>
+    <div class="taux-grille" id="tauxPage"></div>
+
+    <!-- Affiché seulement pour l'admin. La base refuse de toute façon
+         les modifications venant des autres comptes. -->
+    <form id="formTaux" class="carte hidden" novalidate>
+      <h3><span aria-hidden="true">⚙️</span> Modifier les taux</h3>
+      <div class="champ">
+        <label for="nouveauUSD">1 dollar (USD) = ? GNF</label>
+        <input id="nouveauUSD" type="text" inputmode="decimal">
+      </div>
+      <div class="champ">
+        <label for="nouveauEUR">1 euro (EUR) = ? GNF</label>
+        <input id="nouveauEUR" type="text" inputmode="decimal">
+      </div>
+      <div class="champ">
+        <label for="nouveauXOF">1 franc CFA (XOF) = ? GNF</label>
+        <input id="nouveauXOF" type="text" inputmode="decimal">
+      </div>
+      <button type="submit" class="gros-bouton vert">
+        <span aria-hidden="true">💾</span> Enregistrer
+      </button>
+    </form>
+  </section>
+
+  <!-- ---------- PROFIL ---------- -->
+  <section id="pageProfil" class="page" aria-labelledby="titreProfil">
+    <h2 id="titreProfil" class="titre"><span aria-hidden="true">👤</span> Mon profil</h2>
+    <div id="alerteBloque" class="carte alerte hidden" role="alert">
+      <span aria-hidden="true">⛔</span> Ton compte est suspendu en attendant une vérification.
+    </div>
+    <div class="carte">
+      <p class="ligne-info"><b>Nom :</b> <span id="profilNom"></span></p>
+      <p class="ligne-info"><b>Téléphone :</b> <span id="profilTel"></span></p>
+      <p class="ligne-info"><b>Numéro :</b> <span id="profilConfirme"></span></p>
+      <p class="ligne-info"><b>Statut :</b> <span id="profilRole"></span></p>
+      <a id="lienConfirmer" class="gros-bouton whatsapp hidden" href="#" target="_blank" rel="noopener noreferrer">
+        <span aria-hidden="true">💬</span> Confirmer mon numéro par WhatsApp
+      </a>
+    </div>
+
+
+    <!-- ---------- Conditions et vie privée (phase 6) ---------- -->
+    <details class="carte legal">
+      <summary><span aria-hidden="true">📜</span> Conditions d'utilisation</summary>
+      <ul class="liste-legal">
+        <li><b>Devise Madina met en relation.</b> Nous ne touchons jamais ton argent,
+          nous ne gardons aucun compte d'argent et nous ne garantissons aucun échange.</li>
+        <li><b>Tu es responsable de ton échange.</b> Vérifie les billets, rencontre-toi
+          dans un lieu public, n'envoie jamais d'argent Mobile Money avant d'avoir reçu les espèces.</li>
+        <li><b>Interdits :</b> faux billets, fausses annonces, insultes, annonces pour
+          quelqu'un d'autre sans son accord.</li>
+        <li><b>Un compte par numéro.</b> Un compte signalé plusieurs fois est suspendu
+          en attendant la vérification de l'administrateur.</li>
+        <li><b>Le change de devises peut être soumis à des règles en Guinée.</b> Chacun reste
+          responsable du respect de la réglementation pour son activité.</li>
+      </ul>
+    </details>
+
+    <details class="carte legal">
+      <summary><span aria-hidden="true">🔒</span> Tes données</summary>
+      <ul class="liste-legal">
+        <li><b>Ce que nous gardons :</b> ton numéro, ton nom, tes annonces, tes avis
+          et tes signalements. C'est tout.</li>
+        <li><b>Ton numéro n'est pas public.</b> Il n'apparaît qu'après le clic volontaire
+          « Contacter » d'une personne connectée, et chaque demande est enregistrée.</li>
+        <li><b>Ton code PIN est chiffré.</b> Personne, pas même l'administrateur, ne peut le lire.</li>
+        <li><b>Position GPS :</b> uniquement si tu la donnes, et arrondie à environ 100 mètres.</li>
+        <li><b>Effacement :</b> tu peux supprimer ton compte et tout ce qui va avec,
+          à tout moment, avec le bouton ci-dessous.</li>
+      </ul>
+    </details>
+
+    <div class="carte">
+      <h3><span aria-hidden="true">🗑️</span> Supprimer mon compte</h3>
+      <p class="aide">Ton compte, tes annonces, tes avis et ton code PIN seront effacés
+        définitivement. Cette action est irréversible.</p>
+      <button type="button" class="gros-bouton rouge" id="btnSupprimerCompte">
+        <span aria-hidden="true">🗑️</span> Supprimer mon compte
+      </button>
+    </div>
+
+    <!-- Outils admin (affichés seulement pour l'admin ; contrôlés par la base) -->
+    <form id="formAdmin" class="carte hidden" novalidate>
+      <h3><span aria-hidden="true">🛡️</span> Administration</h3>
+      <label for="adminTel">Numéro de l'utilisateur</label>
+      <div class="tel-groupe">
+        <span class="prefixe" aria-hidden="true">🇬🇳 +224</span>
+        <input id="adminTel" class="tel" type="tel" inputmode="numeric" maxlength="9" placeholder="6XXXXXXXX">
+      </div>
+      <p class="aide">Utilise ces boutons seulement si ce numéro t'a écrit lui-même sur WhatsApp.</p>
+      <button type="button" class="gros-bouton bleu" id="btnConfirmerTel">
+        <span aria-hidden="true">☑️</span> Confirmer ce numéro
+      </button>
+      <button type="button" class="gros-bouton gris" id="btnCodeReprise">
+        <span aria-hidden="true">🔑</span> Créer un code « PIN oublié »
+      </button>
+      <div class="admin-grille">
+        <button type="button" class="petit-bouton" data-statut="verifier">✅ Vérifié</button>
+        <button type="button" class="petit-bouton" data-statut="retirer">↩️ Retirer badge</button>
+        <button type="button" class="petit-bouton rouge" data-statut="bloquer">⛔ Bloquer</button>
+        <button type="button" class="petit-bouton" data-statut="debloquer">🔓 Débloquer</button>
+      </div>
+      <div id="resultatAdmin" class="resultat-admin hidden" aria-live="polite"></div>
+    </form>
+
+    <!-- Tableau de bord admin -->
+    <section id="tableauBord" class="carte hidden" aria-labelledby="titreBord">
+      <h3 id="titreBord"><span aria-hidden="true">📈</span> Tableau de bord</h3>
+      <div id="stats" class="stats"></div>
+      <h4 class="sous-question"><span aria-hidden="true">🕘</span> Derniers changements de taux</h4>
+      <div id="historiqueTaux"></div>
+    </section>
+
+    <!-- Signalements à revoir (admin) -->
+    <section id="revueAdmin" class="carte hidden" aria-labelledby="titreRevue">
+      <h3 id="titreRevue"><span aria-hidden="true">🚩</span> Signalements à revoir</h3>
+      <div id="listeSignalements"></div>
+    </section>
+  </section>
+
+</main>
+
+<nav class="nav-bas" aria-label="Navigation principale">
+  <div class="nav-interieur">
+    <button type="button" class="nav-btn active" data-page="Accueil" aria-current="page">
+      <span aria-hidden="true">🏠</span>Accueil</button>
+    <button type="button" class="nav-btn" data-page="Annonces">
+      <span aria-hidden="true">📢</span>Annonces</button>
+    <button type="button" class="nav-btn" data-page="MesAnnonces">
+      <span aria-hidden="true">📋</span>Les miennes</button>
+    <button type="button" class="nav-btn" data-page="Taux">
+      <span aria-hidden="true">📊</span>Taux</button>
+    <button type="button" class="nav-btn" data-page="Profil">
+      <span aria-hidden="true">👤</span>Profil</button>
+  </div>
+</nav>
+
+</div>
+
+</body>
+</html>
