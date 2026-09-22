@@ -7,21 +7,21 @@
    Après chaque modification du site, changer le numéro de VERSION.
    ===================================================================== */
 
-const VERSION = "dm-v2";
+const VERSION = "dm-v3";
 
 const FICHIERS = [
   "./",
   "./index.html",
-  "./css/app.css",
-  "./js/config.js",
-  "./js/vendor/supabase.js",
-  "./js/outils.js",
-  "./js/api.js",
-  "./js/assistant.js",
-  "./js/app.js",
+  "./app.css",
+  "./config.js",
+  "./supabase.js",
+  "./outils.js",
+  "./api.js",
+  "./assistant.js",
+  "./app.js",
   "./manifest.webmanifest",
-  "./icones/icone-192.png",
-  "./icones/icone-512.png"
+  "./icone-192.png",
+  "./icone-512.png"
 ];
 
 self.addEventListener("install", (e) => {
